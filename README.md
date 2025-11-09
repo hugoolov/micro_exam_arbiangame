@@ -99,6 +99,7 @@ This project implements an Arabian card game (similar to Golf card game) using a
 ### Verify Installation:
 ```bash
 java -version   # Should show Java 21
+javac -version   # Should show Java 21
 mvn -version    # Should show Maven 3.8+
 docker --version
 docker-compose --version
