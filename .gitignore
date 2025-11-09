@@ -1,0 +1,16 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+# Editor-based HTTP Client requests
+/httpRequests/
+/.idea/
+
+/weather/target/
+/gameresult/target/
+/game_logic/target/
+/frontend/node_modules/
+/frontend/public/
+/frontend/package-lock.json
+
+/auth/target/
+/api-gateway/target/

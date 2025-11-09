@@ -1,0 +1,54 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  config:
+    import: "optional:consul:"
+  cloud:
+    consul:
+      host: consul
+      port: 8500
+      config:
+        enabled: false
+      discovery:
+        health-check-path: /actuator/health
+        prefer-ip-address: true
+        enabled: true
+        register: true
+    gateway:
+      routes:
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/auth/**
+
+        - id: game-logic
+          uri: lb://game-logic
+          predicates:
+            - Path=/api/game/**,/api/cards/**,/api/decks/**
+
+        - id: game-results
+          uri: lb://game-results
+          predicates:
+            - Path=/api/results/**
+
+        - id: weather
+          uri: lb://weather
+          predicates:
+            - Path=/api/weather/**
+
+# Actuator configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+  health:
+    consul:
+      enabled: true

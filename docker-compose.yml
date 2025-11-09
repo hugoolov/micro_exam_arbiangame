@@ -1,0 +1,122 @@
+services:
+  consul:
+    image: hashicorp/consul:latest
+    ports:
+      - "8500:8500"
+      - "8600:8600/udp"
+    command: agent -server -ui -bootstrap-expect=1 -client=0.0.0.0
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+  postgres-game-logic:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: gamelogic
+      POSTGRES_USER: gameuser
+      POSTGRES_PASSWORD: gamepass
+    ports:
+      - "5433:5432"
+    volumes:
+      - game-logic-data:/var/lib/postgresql/data
+
+  postgres-game-results:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: gameresults
+      POSTGRES_USER: resultuser
+      POSTGRES_PASSWORD: resultpass
+    ports:
+      - "5434:5432"
+    volumes:
+      - game-results-data:/var/lib/postgresql/data
+
+  postgres-auth:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: authdb
+      POSTGRES_USER: authuser
+      POSTGRES_PASSWORD: authpass
+    ports:
+      - "5435:5432"
+    volumes:
+      - auth-data:/var/lib/postgresql/data
+
+  game-logic:
+    build: ./game_logic
+    ports:
+      - "8081:8081"
+    depends_on:
+      - rabbitmq
+      - postgres-game-logic
+      - consul
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-game-logic:5432/gamelogic
+      SPRING_DATASOURCE_USERNAME: gameuser
+      SPRING_DATASOURCE_PASSWORD: gamepass
+      SPRING_CLOUD_CONSUL_HOST: consul
+      SPRING_CLOUD_CONSUL_PORT: 8500
+
+  game-results:
+    build: ./gameresult
+    ports:
+      - "8082:8082"
+    depends_on:
+      - rabbitmq
+      - postgres-game-results
+      - consul
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-game-results:5432/gameresults
+      SPRING_DATASOURCE_USERNAME: resultuser
+      SPRING_DATASOURCE_PASSWORD: resultpass
+      SPRING_CLOUD_CONSUL_HOST: consul
+      SPRING_CLOUD_CONSUL_PORT: 8500
+
+  auth-service:
+    build: ./auth
+    ports:
+      - "8083:8083"
+    depends_on:
+      - postgres-auth
+      - consul
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-auth:5432/authdb
+      SPRING_DATASOURCE_USERNAME: authuser
+      SPRING_DATASOURCE_PASSWORD: authpass
+      SPRING_CLOUD_CONSUL_HOST: consul
+      SPRING_CLOUD_CONSUL_PORT: 8500
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - consul
+      - auth-service
+      - game-logic
+      - game-results
+    environment:
+      SPRING_CLOUD_CONSUL_HOST: consul
+      SPRING_CLOUD_CONSUL_PORT: 8500
+
+  weather:
+    build: ./weather
+    ports:
+      - "8084:8084"
+    depends_on:
+      - consul
+    environment:
+      SPRING_CLOUD_CONSUL_HOST: consul
+      SPRING_CLOUD_CONSUL_PORT: 8500
+volumes:
+  game-logic-data:
+  game-results-data:
+  auth-data:
