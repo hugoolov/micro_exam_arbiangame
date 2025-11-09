@@ -109,7 +109,7 @@ const AuthPage: React.FC<{ onLogin: (username: string, userId: number) => void }
         alert(`Logged in as ${data.username}`);
         onLogin(data.username, data.userId);
       } else {
-        alert(`Login failed: ${await response.text()}`);
+        alert(`Login failed insanely: ${await response.text()}`);
       }
     } catch {
       alert('Something went wrong during login');
