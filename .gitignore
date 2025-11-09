@@ -11,6 +11,5 @@
 /auth/target/
 /api-gateway/target/
 /frontend/node_modules/
-/frontend/public/
 /frontend/package-lock.json
 /frontend/public/card_svg/
