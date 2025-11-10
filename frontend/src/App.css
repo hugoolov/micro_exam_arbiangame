@@ -10,6 +10,12 @@
   flex-direction: column;
 }
 
+.profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
 /* ==================== NAVBAR ==================== */
 .navbar {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -825,6 +831,48 @@
   color: #ffd700;
   font-weight: bold;
 }
+
+
+/* ==================== PROFILE PAGE ========================= */
+.profile-card {
+  display: flex; gap: 1rem; align-items: center;
+  padding: 1rem; border: 1px solid #ddd; border-radius: 12px; margin-bottom: 1rem;
+}
+.profile-card .avatar {
+  width: 56px; height: 56px; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 700; font-size: 1.2rem;
+  background: #f3f3f3;
+}
+.label { font-size: 0.85rem; color: #666; margin: 0; }
+.value { font-size: 1.2rem; margin: 0; }
+
+.logout-btn {
+  background-color: #d9534f; /* red tone */
+  color: white;
+  border: none;
+  border-radius: 12px; /* rounded corners */
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px; /* makes it a square-ish shape */
+  height: 45px; /* keeps it nicely proportioned */
+  text-align: center;
+}
+
+.logout-btn:hover {
+  background-color: #c9302c; /* darker red on hover */
+  transform: scale(1.05);
+}
+
+.logout-btn:active {
+  transform: scale(0.97);
+}
+
 
 
 

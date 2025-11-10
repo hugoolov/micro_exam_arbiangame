@@ -656,9 +656,146 @@ const ResultsPage: React.FC = () => {
   );
 };
 
+// ==================== PROFILE PAGE ================
+const ProfilePage: React.FC<{ username: string; onLogout: () => void }> = ({ username, onLogout }) => {
+  const [results, setResults] = useState<GameResult[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>("");
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const res = await fetch('http://localhost:8080/api/results');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data: GameResult[] = await res.json();
+        setResults(data);
+      } catch (e) {
+        console.error(e);
+        setError("Couldn't load your stats right now.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const mine = useMemo(() => results.filter(r => r.playerName === username), [results, username]);
+
+  const myStats = useMemo(() => {
+    if (!mine.length) {
+      return {
+        games: 0, playerWins: 0, computerWins: 0, ties: 0,
+        winRate: 0, avgRounds: 0, avgPlayerScore: 0, avgComputerScore: 0
+      };
+    }
+    const games = mine.length;
+    let playerWins = 0, computerWins = 0, ties = 0;
+    let sumRounds = 0, sumPS = 0, sumCS = 0;
+    for (const r of mine) {
+      if (r.winner === "PLAYER") playerWins++;
+      else if (r.winner === "COMPUTER") computerWins++;
+      else ties++;
+      sumRounds += r.rounds;
+      sumPS += r.playerScore;
+      sumCS += r.computerScore;
+    }
+    return {
+      games,
+      playerWins,
+      computerWins,
+      ties,
+      winRate: games ? playerWins / games : 0,
+      avgRounds: games ? sumRounds / games : 0,
+      avgPlayerScore: games ? sumPS / games : 0,
+      avgComputerScore: games ? sumCS / games : 0
+    };
+  }, [mine]);
+
+  const accolades = useMemo(() => {
+    const a: string[] = [];
+    if (myStats.games >= 1) a.push("First Game");
+    if (myStats.playerWins >= 1) a.push("First Win");
+    if (myStats.games >= 10) a.push("Played 10 Games");
+    if (myStats.games >= 25) a.push("Veteran: 25 Games");
+    if (myStats.winRate >= 0.5 && myStats.games >= 5) a.push("Winning Record (50%+)");
+    if (myStats.winRate === 1 && myStats.games >= 5) a.push("Flawless: 5 Wins, 0 Losses");
+    return a;
+  }, [myStats]);
+
+  const handleLogoutClick = async () => {
+    try {
+      await fetch("http://localhost:8080/api/logout", { method: "POST" }).catch(() => {});
+    } finally {
+      onLogout();
+    }
+  };
+
+  return (
+      <div className="profile-page">
+        <h1>Profile</h1>
+
+        <section className="card section">
+          <div className="profile-card">
+            <div className="avatar">{username?.[0]?.toUpperCase() || "U"}</div>
+            <div>
+              <p className="label">Username</p>
+              <p className="value">{username}</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="card section">
+          <h2 className="section-title">Your Stats</h2>
+          {loading ? (
+              <p>Loading…</p>
+          ) : error ? (
+              <p className="error">{error}</p>
+          ) : mine.length === 0 ? (
+              <p>No games saved under your username yet. Play a match!</p>
+          ) : (
+              <div className="results-summary">
+                <div className="summary-row">
+                  <div className="chip"><span>Total games</span><strong>{myStats.games}</strong></div>
+                  <div className="chip win"><span>Player wins</span><strong>{myStats.playerWins}</strong></div>
+                  <div className="chip lose"><span>Computer wins</span><strong>{myStats.computerWins}</strong></div>
+                  <div className="chip tie"><span>Ties</span><strong>{myStats.ties}</strong></div>
+                </div>
+                <div className="summary-row">
+                  <div className="chip"><span>Win rate</span><strong>{(myStats.winRate * 100).toFixed(1)}%</strong></div>
+                  <div className="chip"><span>Avg rounds</span><strong>{myStats.avgRounds.toFixed(1)}</strong></div>
+                  <div className="chip">
+                    <span>Avg scores (You / CPU)</span>
+                    <strong>{myStats.avgPlayerScore.toFixed(1)} / {myStats.avgComputerScore.toFixed(1)}</strong>
+                  </div>
+                </div>
+              </div>
+          )}
+        </section>
+
+        <section className="card section">
+          <h2 className="section-title">Accolades</h2>
+          {accolades.length ? (
+              <ul>
+                {accolades.map((a, i) => <li key={i}>🏅 {a}</li>)}
+              </ul>
+          ) : (
+              <p>No accolades yet — keep playing! 🏆</p>
+          )}
+        </section>
+
+        <section className="section">
+          <button onClick={handleLogoutClick} className="logout-btn">🚪 Log Out</button>
+        </section>
+      </div>
+  );
+};
+
+
 // ==================== MAIN APP ====================
 function App() {
-  const [currentPage, setCurrentPage] = useState<'auth' | 'game' | 'results'>('auth');
+  const [currentPage, setCurrentPage] = useState<'auth' | 'game' | 'results' | 'profile'>('auth');
   const [username, setUsername] = useState<string>('');
   const [userId, setUserId] = useState<number | null>(null);
 
@@ -692,8 +829,11 @@ function App() {
                 >
                   📊 Results
                 </button>
-                <button onClick={handleLogout} className="logout-btn">
-                  🚪 Logout
+                <button
+                    onClick={() => setCurrentPage('profile')}
+                    className={currentPage === 'profile' ? 'active' : ''}
+                >
+                  👤 Profile
                 </button>
               </div>
             </nav>
@@ -703,6 +843,7 @@ function App() {
           {currentPage === 'auth' && <AuthPage onLogin={handleLogin}/>}
           {currentPage === 'game' && <GamePage username={username}/>}
           {currentPage === 'results' && <ResultsPage/>}
+          {currentPage === 'profile' && <ProfilePage username={username} onLogout={handleLogout}/>}
         </main>
       </div>
   );
