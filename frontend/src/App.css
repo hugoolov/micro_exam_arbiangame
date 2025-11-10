@@ -597,6 +597,82 @@
   color: #333;
 }
 
+
+.results-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+
+.section { display: block; }
+.card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+
+.section-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #4b4b4b;
+}
+
+
+.section.actions {
+  display: flex;
+  justify-content: center;
+}
+
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr; /* search | winner | from | to */
+  gap: 0.75rem;
+}
+
+.filters-grid input[type="text"],
+.filters-grid select,
+.filters-grid input[type="date"] {
+  padding: 0.6rem 0.7rem;
+  border: 2px solid #e6e6e6;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.filters-grid input:focus,
+.filters-grid select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102,126,234,0.18);
+}
+
+
+.card .results-table {
+  margin-top: 0.25rem;
+  box-shadow: none;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+
+@media (max-width: 900px) {
+  .filters-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 520px) {
+  .filters-grid { grid-template-columns: 1fr; }
+}
+
+
 .refresh-btn {
   display: block;
   margin: 1rem auto 2rem;
@@ -609,6 +685,52 @@
   font-size: 1rem;
   transition: all 0.3s;
 }
+
+.results-summary {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0 0 1rem 0;
+}
+
+.summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #ffffff;
+  border: 2px solid #eee;
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  font-size: 0.95rem;
+}
+
+.chip span {
+  opacity: 0.8;
+}
+
+.chip.win {
+  border-color: #27ae60;
+}
+
+.chip.lose {
+  border-color: #e74c3c;
+}
+
+.chip.tie {
+  border-color: #95a5a6;
+}
+
+@media (max-width: 480px) {
+  .chip { font-size: 0.9rem; }
+}
+
 
 .results-toolbar {
   display: flex;

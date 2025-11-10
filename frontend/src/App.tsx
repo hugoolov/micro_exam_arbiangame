@@ -153,7 +153,7 @@ const AuthPage: React.FC<{ onLogin: (username: string, userId: number) => void }
     <div className="auth-page">
       <h1>Arabian Card Game</h1>
       <WeatherDisplay />
-      
+
       <div className="auth-form">
         <h2>Login</h2>
         <input
@@ -304,8 +304,8 @@ const GamePage: React.FC<{ username: string }> = ({ username }) => {
             <button onClick={() => drawCard('mainDeck')} disabled={drawnCard || gameState.gameOver}>
               Draw from Main Deck ({gameState.mainDeckSize} cards)
             </button>
-            <button 
-              onClick={() => drawCard('openTable')} 
+            <button
+              onClick={() => drawCard('openTable')}
               disabled={!gameState.topOpenTableCard || drawnCard || gameState.gameOver}
             >
               Draw from Open Table
@@ -452,6 +452,47 @@ const ResultsPage: React.FC = () => {
     });
   }, [results, search, winnerFilter, fromDate, toDate]);
 
+  const stats = useMemo(() => {
+    if (!filtered.length) {
+      return {
+        games: 0,
+        playerWins: 0,
+        computerWins: 0,
+        ties: 0,
+        winRate: 0,
+        avgRounds: 0,
+        avgPlayerScore: 0,
+        avgComputerScore: 0,
+      };
+    }
+
+    const games = filtered.length;
+    let playerWins = 0, computerWins = 0, ties = 0;
+    let sumRounds = 0, sumPS = 0, sumCS = 0;
+
+    for (const r of filtered) {
+      if (r.winner === "PLAYER") playerWins++;
+      else if (r.winner === "COMPUTER") computerWins++;
+      else ties++;
+
+      sumRounds += r.rounds;
+      sumPS += r.playerScore;
+      sumCS += r.computerScore;
+    }
+
+    return {
+      games,
+      playerWins,
+      computerWins,
+      ties,
+      winRate: playerWins / games,
+      avgRounds: sumRounds / games,
+      avgPlayerScore: sumPS / games,
+      avgComputerScore: sumCS / games,
+    };
+  }, [filtered]);
+
+
 
   const sorted = useMemo(() => {
     const copy = [...filtered];
@@ -477,145 +518,141 @@ const ResultsPage: React.FC = () => {
   return (
       <div className="results-page">
         <h1>Game Results</h1>
-        <button onClick={fetchResults} className="refresh-btn">🔄 Refresh</button>
 
-        <div className="results-toolbar">
-          <input
-              type="text"
-              placeholder="Search by player..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              aria-label="Search by player"
-          />
+        <div className="results-sections">
+          {/* Actions */}
+          <div className="section actions">
+            <button onClick={fetchResults} className="refresh-btn">🔄 Refresh</button>
+          </div>
 
-          <select
-              value={winnerFilter}
-              onChange={(e) => setWinnerFilter(e.target.value as any)}
-              aria-label="Filter by winner"
-          >
-            <option value="">All winners</option>
-            <option value="PLAYER">Player wins</option>
-            <option value="COMPUTER">Computer wins</option>
-            <option value="TIE">Ties</option>
-          </select>
+          {/* Overview */}
+          <section className="card section">
+            <h2 className="section-title">Overview</h2>
+            <div className="results-summary">
+              <div className="summary-row">
+                <div className="chip"><span>Total games</span><strong>{stats.games}</strong></div>
+                <div className="chip win"><span>Player wins</span><strong>{stats.playerWins}</strong></div>
+                <div className="chip lose"><span>Computer wins</span><strong>{stats.computerWins}</strong></div>
+                <div className="chip tie"><span>Ties</span><strong>{stats.ties}</strong></div>
+              </div>
+              <div className="summary-row">
+                <div className="chip"><span>Win rate</span><strong>{(stats.winRate * 100).toFixed(1)}%</strong></div>
+                <div className="chip"><span>Avg rounds</span><strong>{stats.avgRounds.toFixed(1)}</strong></div>
+                <div className="chip">
+                  <span>Avg scores (You / CPU)</span>
+                  <strong>{stats.avgPlayerScore.toFixed(1)} / {stats.avgComputerScore.toFixed(1)}</strong>
+                </div>
+              </div>
+            </div>
+          </section>
 
-          <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              aria-label="From date"
-          />
-          <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              aria-label="To date"
-          />
-        </div>
+          {/* Filters */}
+          <section className="card section">
+            <h2 className="section-title">Filters</h2>
+            <div className="filters-grid">
+              <input
+                  type="text"
+                  placeholder="Search by player..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  aria-label="Search by player"
+              />
+              <select
+                  value={winnerFilter}
+                  onChange={(e) => setWinnerFilter(e.target.value as any)}
+                  aria-label="Filter by winner"
+              >
+                <option value="">All winners</option>
+                <option value="PLAYER">Player wins</option>
+                <option value="COMPUTER">Computer wins</option>
+                <option value="TIE">Ties</option>
+              </select>
+              <input
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  aria-label="From date"
+              />
+              <input
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  aria-label="To date"
+              />
+            </div>
+          </section>
 
+          <section className="card section">
 
-        {loading ? (
-            <p>Loading results...</p>
-        ) : results.length === 0 ? (
-            <p>No game results yet. Play some games!</p>
-        ) : filtered.length === 0 ? (
-            <p>No results match your filters.</p>
-        ) : (
-            <table className="results-table">
-              <thead>
-              <tr>
-                <th
-                    onClick={() => toggleSort("playerName")}
-                    aria-sort={
-                      sortKey === "playerName"
-                          ? sortDir === "asc"
-                              ? "ascending"
-                              : "descending"
-                          : "none"
-                    }
-                >
-                  Player {sortKey === "playerName" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                </th>
-                <th
-                    onClick={() => toggleSort("playerScore")}
-                    aria-sort={
-                      sortKey === "playerScore"
-                          ? sortDir === "asc"
-                              ? "ascending"
-                              : "descending"
-                          : "none"
-                    }
-                >
-                  Player Score {sortKey === "playerScore" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                </th>
-                <th
-                    onClick={() => toggleSort("computerScore")}
-                    aria-sort={
-                      sortKey === "computerScore"
-                          ? sortDir === "asc"
-                              ? "ascending"
-                              : "descending"
-                          : "none"
-                    }
-                >
-                  Computer Score {sortKey === "computerScore" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                </th>
-                <th
-                    onClick={() => toggleSort("winner")}
-                    aria-sort={
-                      sortKey === "winner"
-                          ? sortDir === "asc"
-                              ? "ascending"
-                              : "descending"
-                          : "none"
-                    }
-                >
-                  Winner {sortKey === "winner" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                </th>
-                <th
-                    onClick={() => toggleSort("rounds")}
-                    aria-sort={
-                      sortKey === "rounds"
-                          ? sortDir === "asc"
-                              ? "ascending"
-                              : "descending"
-                          : "none"
-                    }
-                >
-                  Rounds {sortKey === "rounds" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                </th>
-                <th
-                    onClick={() => toggleSort("gameDate")}
-                    aria-sort={
-                      sortKey === "gameDate"
-                          ? sortDir === "asc"
-                              ? "ascending"
-                              : "descending"
-                          : "none"
-                    }
-                >
-                  Date {sortKey === "gameDate" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                </th>
-              </tr>
-              </thead>
-              <tbody>
-              {sorted.map((result) => (
-                  <tr key={result.id} className={result.winner === 'PLAYER' ? 'win' : ''}>
-                    <td>{result.playerName}</td>
-                    <td>{result.playerScore}</td>
-                    <td>{result.computerScore}</td>
-                    <td>
-                      {result.winner === 'PLAYER' ? '🏆 Player' :
-                          result.winner === 'COMPUTER' ? '🤖 Computer' : '🤝 Tie'}
-                    </td>
-                    <td>{result.rounds}</td>
-                    <td>{new Date(result.gameDate).toLocaleString()}</td>
+            {loading ? (
+                <p>Loading results...</p>
+            ) : results.length === 0 ? (
+                <p>No game results yet. Play some games!</p>
+            ) : filtered.length === 0 ? (
+                <p>No results match your filters.</p>
+            ) : (
+                <table className="results-table">
+                  <thead>
+                  <tr>
+                    <th
+                        onClick={() => toggleSort("playerName")}
+                        aria-sort={sortKey === "playerName" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+                    >
+                      Player {sortKey === "playerName" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                    </th>
+                    <th
+                        onClick={() => toggleSort("playerScore")}
+                        aria-sort={sortKey === "playerScore" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+                    >
+                      Player Score {sortKey === "playerScore" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                    </th>
+                    <th
+                        onClick={() => toggleSort("computerScore")}
+                        aria-sort={sortKey === "computerScore" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+                    >
+                      Computer Score {sortKey === "computerScore" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                    </th>
+                    <th
+                        onClick={() => toggleSort("winner")}
+                        aria-sort={sortKey === "winner" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+                    >
+                      Winner {sortKey === "winner" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                    </th>
+                    <th
+                        onClick={() => toggleSort("rounds")}
+                        aria-sort={sortKey === "rounds" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+                    >
+                      Rounds {sortKey === "rounds" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                    </th>
+                    <th
+                        onClick={() => toggleSort("gameDate")}
+                        aria-sort={sortKey === "gameDate" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+                    >
+                      Date {sortKey === "gameDate" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                    </th>
                   </tr>
-              ))}
-              </tbody>
-            </table>
-        )}
+                  </thead>
+                  <tbody>
+                  {sorted.map((result) => (
+                      <tr key={result.id} className={result.winner === "PLAYER" ? "win" : ""}>
+                        <td>{result.playerName}</td>
+                        <td>{result.playerScore}</td>
+                        <td>{result.computerScore}</td>
+                        <td>
+                          {result.winner === "PLAYER" ? "🏆 Player" :
+                              result.winner === "COMPUTER" ? "🤖 Computer" : "🤝 Tie"}
+                        </td>
+                        <td>{result.rounds}</td>
+                        <td>{new Date(result.gameDate).toLocaleString()}</td>
+                      </tr>
+                  ))}
+                  </tbody>
+                </table>
+            )}
+          </section>
+        </div>
       </div>
+
   );
 };
 
@@ -645,29 +682,29 @@ function App() {
               <div className="nav-links">
                 <button
                     onClick={() => setCurrentPage('game')}
-              className={currentPage === 'game' ? 'active' : ''}
-            >
-              🎮 Play Game
-            </button>
-            <button 
-              onClick={() => setCurrentPage('results')}
-              className={currentPage === 'results' ? 'active' : ''}
-            >
-              📊 Results
-            </button>
-            <button onClick={handleLogout} className="logout-btn">
-              🚪 Logout
-            </button>
-          </div>
-        </nav>
-      )}
+                    className={currentPage === 'game' ? 'active' : ''}
+                >
+                  🎮 Play Game
+                </button>
+                <button
+                    onClick={() => setCurrentPage('results')}
+                    className={currentPage === 'results' ? 'active' : ''}
+                >
+                  📊 Results
+                </button>
+                <button onClick={handleLogout} className="logout-btn">
+                  🚪 Logout
+                </button>
+              </div>
+            </nav>
+        )}
 
-      <main className="main-content">
-        {currentPage === 'auth' && <AuthPage onLogin={handleLogin} />}
-        {currentPage === 'game' && <GamePage username={username} />}
-        {currentPage === 'results' && <ResultsPage />}
-      </main>
-    </div>
+        <main className="main-content">
+          {currentPage === 'auth' && <AuthPage onLogin={handleLogin}/>}
+          {currentPage === 'game' && <GamePage username={username}/>}
+          {currentPage === 'results' && <ResultsPage/>}
+        </main>
+      </div>
   );
 }
 
