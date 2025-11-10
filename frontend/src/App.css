@@ -10,6 +10,12 @@
   flex-direction: column;
 }
 
+.profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
 /* ==================== NAVBAR ==================== */
 .navbar {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -51,12 +57,11 @@
   font-weight: bold;
 }
 
-.logout-btn {
-  background: rgba(255, 59, 48, 0.8) !important;
+.navbar .logout-btn {
+  background: rgba(255, 59, 48, 0.8);
 }
-
-.logout-btn:hover {
-  background: rgba(255, 59, 48, 1) !important;
+.navbar .logout-btn:hover {
+  background: rgba(255, 59, 48, 1);
 }
 
 .main-content {
@@ -827,6 +832,68 @@
 }
 
 
+/* ==================== PROFILE PAGE ========================= */
+.profile-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  background: #fff;
+}
+.profile-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.profile-card .avatar {
+  width: 56px; height: 56px; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 700; font-size: 1.2rem;
+  background: #f3f3f3;
+}
+.label { font-size: 0.85rem; color: #666; margin: 0; }
+.value { font-size: 1.2rem; margin: 0; }
+
+.logout-btn--profile {
+  height: 42px;
+  min-width: 110px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.logout-btn {
+  background-color: #d9534f;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 45px;
+  text-align: center;
+}
+
+.logout-btn:hover {
+  background-color: #c9302c;
+  transform: scale(1.05);
+}
+
+.logout-btn:active {
+  transform: scale(0.97);
+}
+
+
+
 
 /* ==================== RESPONSIVE DESIGN ==================== */
 @media (max-width: 768px) {
@@ -900,4 +967,39 @@
   .game-over-buttons button {
     width: 100%;
   }
+}
+/* =========================== BADGES ===========================*/
+.badges-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.badge-card {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  background: #fff;
+  align-items: center;
+}
+
+.badge-card.locked { opacity: 0.65; }
+.badge-icon { font-size: 2rem; display: grid; place-items: center; }
+
+.badge-name { font-weight: 700; }
+.badge-desc { color: #666; font-size: 0.9rem; }
+
+.badge-progress {
+  position: relative; height: 8px; background: #f1f1f1;
+  border-radius: 999px; margin-top: 0.5rem; overflow: hidden;
+}
+.badge-progress-fill {
+  height: 100%; background: #4caf50; /* keep or theme */
+  transition: width 200ms ease;
+}
+.badge-progress-text {
+  font-size: 0.8rem; color: #444; margin-top: 0.35rem; display: inline-block;
 }
