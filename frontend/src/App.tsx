@@ -400,6 +400,12 @@ const ResultsPage: React.FC = () => {
   const [results, setResults] = useState<GameResult[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Filters
+  const [search, setSearch] = useState("");
+  const [winnerFilter, setWinnerFilter] = useState<"" | "PLAYER" | "COMPUTER" | "TIE">("");
+  const [fromDate, setFromDate] = useState<string>(""); // yyyy-mm-dd
+  const [toDate, setToDate] = useState<string>("");
+
   const [sortKey, setSortKey] = useState<keyof GameResult>("gameDate");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
@@ -429,80 +435,187 @@ const ResultsPage: React.FC = () => {
     }
   };
 
+  const withinDateRange = (d: Date) => {
+    const fromOk = fromDate ? d >= new Date(fromDate + "T00:00:00") : true;
+    const toOk   = toDate   ? d <= new Date(toDate   + "T23:59:59") : true;
+    return fromOk && toOk;
+  };
+
+  const filtered = useMemo(() => {
+    const s = search.trim().toLowerCase();
+    return results.filter(r => {
+      const d = new Date(r.gameDate);
+      const matchesSearch = !s || r.playerName.toLowerCase().includes(s);
+      const matchesWinner = !winnerFilter || r.winner === winnerFilter;
+      const matchesDate   = withinDateRange(d);
+      return matchesSearch && matchesWinner && matchesDate;
+    });
+  }, [results, search, winnerFilter, fromDate, toDate]);
+
+
   const sorted = useMemo(() => {
-    const copy = [...results];
+    const copy = [...filtered];
     copy.sort((a, b) => {
       if (sortKey === "gameDate") {
         const ta = new Date(a.gameDate).getTime();
         const tb = new Date(b.gameDate).getTime();
         return sortDir === "asc" ? ta - tb : tb - ta;
       }
-
       const va = a[sortKey] as any;
       const vb = b[sortKey] as any;
-
       if (typeof va === "number" && typeof vb === "number") {
         return sortDir === "asc" ? va - vb : vb - va;
       }
-
       const sa = String(va);
       const sb = String(vb);
       return sortDir === "asc" ? sa.localeCompare(sb) : sb.localeCompare(sa);
     });
     return copy;
-  }, [results, sortKey, sortDir]);
+  }, [filtered, sortKey, sortDir]);
+
 
   return (
-    <div className="results-page">
-      <h1>Game Results</h1>
-      <button onClick={fetchResults} className="refresh-btn">🔄 Refresh</button>
+      <div className="results-page">
+        <h1>Game Results</h1>
+        <button onClick={fetchResults} className="refresh-btn">🔄 Refresh</button>
 
-      {loading ? (
-        <p>Loading results...</p>
-      ) : results.length === 0 ? (
-        <p>No game results yet. Play some games!</p>
-      ) : (
-        <table className="results-table">
-          <thead>
-          <tr>
-            <th onClick={() => toggleSort("playerName")}>
-              Player {sortKey === "playerName" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-            </th>
-            <th onClick={() => toggleSort("playerScore")}>
-              Player Score {sortKey === "playerScore" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-            </th>
-            <th onClick={() => toggleSort("computerScore")}>
-              Computer Score {sortKey === "computerScore" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-            </th>
-            <th onClick={() => toggleSort("winner")}>
-              Winner {sortKey === "winner" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-            </th>
-            <th onClick={() => toggleSort("rounds")}>
-              Rounds {sortKey === "rounds" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-            </th>
-            <th onClick={() => toggleSort("gameDate")}>
-              Date {sortKey === "gameDate" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-            </th>
-          </tr>
-          </thead>
-          <tbody>
-          {sorted.map((result) => (
-              <tr key={result.id} className={result.winner === 'PLAYER' ? 'win' : ''}>
-                <td>{result.playerName}</td>
-                <td>{result.playerScore}</td>
-                <td>{result.computerScore}</td>
-                <td>
-                  {result.winner === 'PLAYER' ? '🏆 Player' :
-                      result.winner === 'COMPUTER' ? '🤖 Computer' : '🤝 Tie'}
-                </td>
-                <td>{result.rounds}</td>
-                <td>{new Date(result.gameDate).toLocaleString()}</td>
+        <div className="results-toolbar">
+          <input
+              type="text"
+              placeholder="Search by player..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Search by player"
+          />
+
+          <select
+              value={winnerFilter}
+              onChange={(e) => setWinnerFilter(e.target.value as any)}
+              aria-label="Filter by winner"
+          >
+            <option value="">All winners</option>
+            <option value="PLAYER">Player wins</option>
+            <option value="COMPUTER">Computer wins</option>
+            <option value="TIE">Ties</option>
+          </select>
+
+          <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              aria-label="From date"
+          />
+          <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              aria-label="To date"
+          />
+        </div>
+
+
+        {loading ? (
+            <p>Loading results...</p>
+        ) : results.length === 0 ? (
+            <p>No game results yet. Play some games!</p>
+        ) : filtered.length === 0 ? (
+            <p>No results match your filters.</p>
+        ) : (
+            <table className="results-table">
+              <thead>
+              <tr>
+                <th
+                    onClick={() => toggleSort("playerName")}
+                    aria-sort={
+                      sortKey === "playerName"
+                          ? sortDir === "asc"
+                              ? "ascending"
+                              : "descending"
+                          : "none"
+                    }
+                >
+                  Player {sortKey === "playerName" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
+                <th
+                    onClick={() => toggleSort("playerScore")}
+                    aria-sort={
+                      sortKey === "playerScore"
+                          ? sortDir === "asc"
+                              ? "ascending"
+                              : "descending"
+                          : "none"
+                    }
+                >
+                  Player Score {sortKey === "playerScore" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
+                <th
+                    onClick={() => toggleSort("computerScore")}
+                    aria-sort={
+                      sortKey === "computerScore"
+                          ? sortDir === "asc"
+                              ? "ascending"
+                              : "descending"
+                          : "none"
+                    }
+                >
+                  Computer Score {sortKey === "computerScore" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
+                <th
+                    onClick={() => toggleSort("winner")}
+                    aria-sort={
+                      sortKey === "winner"
+                          ? sortDir === "asc"
+                              ? "ascending"
+                              : "descending"
+                          : "none"
+                    }
+                >
+                  Winner {sortKey === "winner" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
+                <th
+                    onClick={() => toggleSort("rounds")}
+                    aria-sort={
+                      sortKey === "rounds"
+                          ? sortDir === "asc"
+                              ? "ascending"
+                              : "descending"
+                          : "none"
+                    }
+                >
+                  Rounds {sortKey === "rounds" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
+                <th
+                    onClick={() => toggleSort("gameDate")}
+                    aria-sort={
+                      sortKey === "gameDate"
+                          ? sortDir === "asc"
+                              ? "ascending"
+                              : "descending"
+                          : "none"
+                    }
+                >
+                  Date {sortKey === "gameDate" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
               </tr>
-          ))}
-          </tbody>
-        </table>
-      )}
-    </div>
+              </thead>
+              <tbody>
+              {sorted.map((result) => (
+                  <tr key={result.id} className={result.winner === 'PLAYER' ? 'win' : ''}>
+                    <td>{result.playerName}</td>
+                    <td>{result.playerScore}</td>
+                    <td>{result.computerScore}</td>
+                    <td>
+                      {result.winner === 'PLAYER' ? '🏆 Player' :
+                          result.winner === 'COMPUTER' ? '🤖 Computer' : '🤝 Tie'}
+                    </td>
+                    <td>{result.rounds}</td>
+                    <td>{new Date(result.gameDate).toLocaleString()}</td>
+                  </tr>
+              ))}
+              </tbody>
+            </table>
+        )}
+      </div>
   );
 };
 
@@ -525,13 +638,13 @@ function App() {
   };
 
   return (
-    <div className="app">
-      {currentPage !== 'auth' && (
-        <nav className="navbar">
-          <div className="nav-brand">Arabian Card Game</div>
-          <div className="nav-links">
-            <button 
-              onClick={() => setCurrentPage('game')}
+      <div className="app">
+        {currentPage !== 'auth' && (
+            <nav className="navbar">
+              <div className="nav-brand">Arabian Card Game</div>
+              <div className="nav-links">
+                <button
+                    onClick={() => setCurrentPage('game')}
               className={currentPage === 'game' ? 'active' : ''}
             >
               🎮 Play Game
