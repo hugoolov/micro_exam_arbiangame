@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import './App.css';
 
 // ==================== INTERFACES ====================
@@ -400,9 +400,21 @@ const ResultsPage: React.FC = () => {
   const [results, setResults] = useState<GameResult[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [sortKey, setSortKey] = useState<keyof GameResult>("gameDate");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
   useEffect(() => {
     fetchResults();
   }, []);
+
+  const toggleSort = (key: keyof GameResult) => {
+    if (key === sortKey) {
+      setSortDir((prev) => (prev=== "asc" ? "desc" : "asc"));
+    }else{
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
 
   const fetchResults = async () => {
     setLoading(true);
@@ -417,6 +429,29 @@ const ResultsPage: React.FC = () => {
     }
   };
 
+  const sorted = useMemo(() => {
+    const copy = [...results];
+    copy.sort((a, b) => {
+      if (sortKey === "gameDate") {
+        const ta = new Date(a.gameDate).getTime();
+        const tb = new Date(b.gameDate).getTime();
+        return sortDir === "asc" ? ta - tb : tb - ta;
+      }
+
+      const va = a[sortKey] as any;
+      const vb = b[sortKey] as any;
+
+      if (typeof va === "number" && typeof vb === "number") {
+        return sortDir === "asc" ? va - vb : vb - va;
+      }
+
+      const sa = String(va);
+      const sb = String(vb);
+      return sortDir === "asc" ? sa.localeCompare(sb) : sb.localeCompare(sa);
+    });
+    return copy;
+  }, [results, sortKey, sortDir]);
+
   return (
     <div className="results-page">
       <h1>Game Results</h1>
@@ -429,29 +464,41 @@ const ResultsPage: React.FC = () => {
       ) : (
         <table className="results-table">
           <thead>
-            <tr>
-              <th>Player</th>
-              <th>Player Score</th>
-              <th>Computer Score</th>
-              <th>Winner</th>
-              <th>Rounds</th>
-              <th>Date</th>
-            </tr>
+          <tr>
+            <th onClick={() => toggleSort("playerName")}>
+              Player {sortKey === "playerName" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+            </th>
+            <th onClick={() => toggleSort("playerScore")}>
+              Player Score {sortKey === "playerScore" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+            </th>
+            <th onClick={() => toggleSort("computerScore")}>
+              Computer Score {sortKey === "computerScore" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+            </th>
+            <th onClick={() => toggleSort("winner")}>
+              Winner {sortKey === "winner" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+            </th>
+            <th onClick={() => toggleSort("rounds")}>
+              Rounds {sortKey === "rounds" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+            </th>
+            <th onClick={() => toggleSort("gameDate")}>
+              Date {sortKey === "gameDate" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+            </th>
+          </tr>
           </thead>
           <tbody>
-            {results.map((result) => (
+          {sorted.map((result) => (
               <tr key={result.id} className={result.winner === 'PLAYER' ? 'win' : ''}>
                 <td>{result.playerName}</td>
                 <td>{result.playerScore}</td>
                 <td>{result.computerScore}</td>
                 <td>
-                  {result.winner === 'PLAYER' ? '🏆 Player' : 
-                   result.winner === 'COMPUTER' ? '🤖 Computer' : '🤝 Tie'}
+                  {result.winner === 'PLAYER' ? '🏆 Player' :
+                      result.winner === 'COMPUTER' ? '🤖 Computer' : '🤝 Tie'}
                 </td>
                 <td>{result.rounds}</td>
                 <td>{new Date(result.gameDate).toLocaleString()}</td>
               </tr>
-            ))}
+          ))}
           </tbody>
         </table>
       )}

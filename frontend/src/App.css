@@ -631,6 +631,8 @@
 
 .results-table th,
 .results-table td {
+  cursor: pointer;
+  user-select: none;
   padding: 1rem;
   text-align: left;
   border-bottom: 1px solid #e0e0e0;
@@ -641,6 +643,8 @@
   text-transform: uppercase;
   font-size: 0.9rem;
   letter-spacing: 0.5px;
+  transition: color 0.2s ease, transform 0.1s ease;
+  position: relative;
 }
 
 .results-table tbody tr {
@@ -657,6 +661,12 @@
 
 .results-table tbody tr.win:hover {
   background: #c3e6cb;
+}
+
+.results-table th:hover {
+  color: #ffd700;
+  text-decoration: underline;
+  transform: translateY(-1px);
 }
 
 /* ==================== RESPONSIVE DESIGN ==================== */
