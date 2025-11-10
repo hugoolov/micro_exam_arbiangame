@@ -21,6 +21,109 @@ interface GameResult {
   gameDate: string;
 }
 
+type Stats = {
+  games: number;
+  playerWins: number;
+  computerWins: number;
+  ties: number;
+  winRate: number;
+  avgRounds: number;
+  avgPlayerScore: number;
+  avgComputerScore: number;
+};
+
+interface Badge {
+  id: BadgeId;
+  name: string;
+  description: string;
+  icon: string;
+  maxProgress?: number;
+  condition: (ctx: { stats: Stats; results: GameResult[] }) => {
+    earned: boolean;
+    progress?: number;
+  };
+}
+
+interface EarnedBadge {
+  id: BadgeId;
+  earnedAt: string;
+}
+
+// ==================== BADGDES ==============================
+type BadgeId =
+    | "first_game"
+    | "first_win"
+    | "ten_games"
+    | "win_rate_50"
+    | "flawless_5"
+    | "perfect_score";
+
+const BADGES: Badge[] = [
+  {
+    id: "first_game",
+    name: "First Game",
+    description: "Play your very first game.",
+    icon: "🎬",
+    maxProgress: 1,
+    condition: ({ stats }) => ({
+      earned: stats.games >= 1,
+      progress: Math.min(stats.games, 1),
+    }),
+  },
+  {
+    id: "first_win",
+    name: "First Win",
+    description: "Win one game.",
+    icon: "🏆",
+    maxProgress: 1,
+    condition: ({ stats }) => ({
+      earned: stats.playerWins >= 1,
+      progress: Math.min(stats.playerWins, 1),
+    }),
+  },
+  {
+    id: "ten_games",
+    name: "Played 10 Games",
+    description: "Reach 10 total games played.",
+    icon: "🔟",
+    maxProgress: 10,
+    condition: ({ stats }) => ({
+      earned: stats.games >= 10,
+      progress: Math.min(stats.games, 10),
+    }),
+  },
+  {
+    id: "win_rate_50",
+    name: "Winning Record",
+    description: "Maintain a win rate of 50% or higher after 5+ games.",
+    icon: "📈",
+    condition: ({ stats }) => ({
+      earned: stats.games >= 5 && stats.winRate >= 0.5,
+    }),
+  },
+  {
+    id: "flawless_5",
+    name: "Flawless",
+    description: "Win 5 games with 0 losses recorded.",
+    icon: "💯",
+    maxProgress: 5,
+    condition: ({ results }) => {
+      const wins = results.filter(r => r.winner === "PLAYER").length;
+      const losses = results.filter(r => r.winner === "COMPUTER").length;
+      return { earned: wins >= 5 && losses === 0, progress: Math.min(wins, 5) };
+    },
+  },
+  {
+    id: "perfect_score",
+    name: "Perfect score",
+    description: "Get the lowest score possible",
+    icon: "🔥",
+    condition: ({ results }) => ({
+      earned: results.some(r => r.playerScore >= 0),
+    }),
+  },
+];
+
 // ==================== WEATHER COMPONENT ====================
 const WeatherDisplay: React.FC = () => {
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -701,6 +804,7 @@ const ProfilePage: React.FC<{ username: string; onLogout: () => void }> = ({ use
       sumPS += r.playerScore;
       sumCS += r.computerScore;
     }
+
     return {
       games,
       playerWins,
@@ -712,6 +816,14 @@ const ProfilePage: React.FC<{ username: string; onLogout: () => void }> = ({ use
       avgComputerScore: games ? sumCS / games : 0
     };
   }, [mine]);
+
+  const badgeResults = useMemo(() => {
+    const ctx = { stats: myStats, results: mine };
+    return BADGES.map(b => {
+      const { earned, progress } = b.condition(ctx);
+      return { badge: b, earned, progress: progress ?? 0 };
+    });
+  }, [myStats, mine]);
 
   const accolades = useMemo(() => {
     const a: string[] = [];
@@ -738,11 +850,17 @@ const ProfilePage: React.FC<{ username: string; onLogout: () => void }> = ({ use
 
         <section className="card section">
           <div className="profile-card">
-            <div className="avatar">{username?.[0]?.toUpperCase() || "U"}</div>
-            <div>
-              <p className="label">Username</p>
-              <p className="value">{username}</p>
+            <div className="profile-left">
+              <div className="avatar">{username?.[0]?.toUpperCase() || "U"}</div>
+              <div>
+                <p className="label">Username</p>
+                <p className="value">{username}</p>
+              </div>
             </div>
+
+            <button onClick={handleLogoutClick} className="logout-btn logout-btn--profile">
+              Log Out
+            </button>
           </div>
         </section>
 
@@ -776,18 +894,30 @@ const ProfilePage: React.FC<{ username: string; onLogout: () => void }> = ({ use
 
         <section className="card section">
           <h2 className="section-title">Accolades</h2>
-          {accolades.length ? (
-              <ul>
-                {accolades.map((a, i) => <li key={i}>🏅 {a}</li>)}
-              </ul>
-          ) : (
-              <p>No accolades yet — keep playing! 🏆</p>
-          )}
+          <div className="badges-grid">
+            {badgeResults.map(({badge, earned, progress}) => (
+                <div key={badge.id} className={`badge-card ${earned ? "earned" : "locked"}`}>
+                  <div className="badge-icon">{badge.icon}</div>
+                  <div className="badge-info">
+                    <div className="badge-name">{badge.name}</div>
+                    <div className="badge-desc">{badge.description}</div>
+                    {badge.maxProgress && (
+                        <div className="badge-progress">
+                          <div
+                              className="badge-progress-fill"
+                              style={{width: `${(progress / badge.maxProgress) * 100}%`}}
+                          />
+                          <span className="badge-progress-text">
+                {progress}/{badge.maxProgress}
+              </span>
+                        </div>
+                    )}
+                  </div>
+                </div>
+            ))}
+          </div>
         </section>
 
-        <section className="section">
-          <button onClick={handleLogoutClick} className="logout-btn">🚪 Log Out</button>
-        </section>
       </div>
   );
 };
@@ -817,7 +947,7 @@ function App() {
             <nav className="navbar">
               <div className="nav-brand">Arabian Card Game</div>
               <div className="nav-links">
-                <button
+              <button
                     onClick={() => setCurrentPage('game')}
                     className={currentPage === 'game' ? 'active' : ''}
                 >
