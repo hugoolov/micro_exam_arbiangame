@@ -610,6 +610,35 @@
   transition: all 0.3s;
 }
 
+.results-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 0 0 1rem 0;
+}
+
+.results-toolbar input[type="text"],
+.results-toolbar select,
+.results-toolbar input[type="date"] {
+  padding: 0.5rem 0.6rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.results-toolbar input[type="text"]:focus,
+.results-toolbar select:focus,
+.results-toolbar input[type="date"]:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+
 .refresh-btn:hover {
   background: #5568d3;
   transform: translateY(-2px);
@@ -668,6 +697,14 @@
   text-decoration: underline;
   transform: translateY(-1px);
 }
+
+.results-table th[aria-sort="ascending"],
+.results-table th[aria-sort="descending"] {
+  color: #ffd700;
+  font-weight: bold;
+}
+
+
 
 /* ==================== RESPONSIVE DESIGN ==================== */
 @media (max-width: 768px) {
