@@ -351,6 +351,65 @@
   color: #333;
 }
 
+
+.game-landing {
+  max-width: 900px;
+  margin: 1.5rem auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.howto-card {
+  width: 100%;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  position: relative;
+}
+
+
+.howto-card h2 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.35rem;
+  text-align: center;
+  color: #333;
+  padding-left: 2.2rem;
+}
+
+.howto-card ol {
+  margin: 0.25rem 0 0.75rem 1.25rem;
+  padding: 0;
+  line-height: 1.6;
+}
+
+.howto-card .hint {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #555;
+  background: #f7f7ff;
+  border-left: 4px solid #667eea;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+}
+
+
+.start-game-btn--landing {
+  margin-top: 0.75rem;
+  padding: 1rem 3rem;
+  border-radius: 12px;
+}
+
+@media (min-width: 700px) {
+  .start-game-btn--landing {
+    margin-top: 1.25rem;
+  }
+}
+
+
 .start-game-btn {
   display: block;
   margin: 2rem auto;
@@ -1002,4 +1061,24 @@
 }
 .badge-progress-text {
   font-size: 0.8rem; color: #444; margin-top: 0.35rem; display: inline-block;
+}
+
+.toast {
+  position: fixed;
+  right: 1rem;
+  top: 1rem;
+  z-index: 2000;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.12);
+  color: #fff;
+  font-weight: 600;
+  animation: toast-in .2s ease-out;
+}
+.toast-success { background: #2e7d32; }
+.toast-error   { background: #c62828; }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

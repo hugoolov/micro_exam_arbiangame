@@ -191,7 +191,7 @@ const WeatherDisplay: React.FC = () => {
 };
 
 // ==================== LOGIN/REGISTER COMPONENT ====================
-const AuthPage: React.FC<{ onLogin: (username: string, userId: number) => void }> = ({ onLogin }) => {
+const AuthPage: React.FC<{ onLogin: (username: string, userId: number) => void; onNotify}> = ({ onLogin, onNotify }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showRegister, setShowRegister] = useState(false);
@@ -219,6 +219,8 @@ const AuthPage: React.FC<{ onLogin: (username: string, userId: number) => void }
     }
   };
 
+  const [registerLoading, setRegisterLoading] = useState(false);
+
   const handleRegister = async () => {
     try {
       const response = await fetch('http://localhost:8080/api/auth/register', {
@@ -227,17 +229,23 @@ const AuthPage: React.FC<{ onLogin: (username: string, userId: number) => void }
         body: JSON.stringify({ username: newUsername, password: newPassword }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        alert(`User ${data.username} registered successfully!`);
-        setShowRegister(false);
-        setNewUsername('');
-        setNewPassword('');
-      } else {
+      if (!response.ok) {
         alert(`Registration failed: ${await response.text()}`);
+        return;
       }
+
+      const data = await response.json(); // expect { username, userId, ... }
+      // Auto login if success
+      onLogin(data.username, data.userId);
+      onNotify(`Welcome, ${data.username}! Your account was created and you are now logged in.`,'success');
+
+      setShowRegister(false);
+      setNewUsername('');
+      setNewPassword('');
     } catch {
       alert('Something went wrong during registration');
+    } finally {
+      setRegisterLoading(false);
     }
   };
 
@@ -398,7 +406,27 @@ const GamePage: React.FC<{ username: string }> = ({ username }) => {
       <p>Playing as: <strong>{username}</strong></p>
 
       {!gameState && (
-        <button onClick={startGame} className="start-game-btn">Start New Game</button>
+          <div className="game-landing">
+            <section className="howto-card">
+              <h2>How to Play</h2>
+              <ol>
+                <li>Both you and your opponent get dealt a set of cards.</li>
+                <li>Draw a card from the Main Deck or the Open Table.</li>
+                <li>Either swap it with a card in your hand, or discard it.</li>
+                <li>Note that if you discard a card, your opponent will get a chance to pick it up in the next round</li>
+                <li>Try to finish with the lowest total score.</li>
+                <li>End the game when you think your hand is best.</li>
+                <li>All aces have score of -5p.</li>
+                <li>Ten of Hearts and Ten of Diamonds are both -10p.</li>
+                <li>All the rest of the cards have their own value.</li>
+              </ol>
+              <p className="hint">Tip: Watch the discard pile to plan smarter swaps.</p>
+            </section>
+
+            <button onClick={startGame} className="start-game-btn start-game-btn--landing">
+              Start New Game
+            </button>
+          </div>
       )}
 
       {gameState && (
@@ -765,6 +793,16 @@ const ProfilePage: React.FC<{ username: string; onLogout: () => void }> = ({ use
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
 
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const confirmLogout = async () => {
+    try {
+      await fetch("http://localhost:8080/api/logout", { method: "POST" }).catch(() => {});
+    } finally {
+      onLogout();
+    }
+  };
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -837,6 +875,9 @@ const ProfilePage: React.FC<{ username: string; onLogout: () => void }> = ({ use
   }, [myStats]);
 
   const handleLogoutClick = async () => {
+    const confirmed = window.confirm("Are you sure you want to log out?");
+    if (!confirmed) return;
+
     try {
       await fetch("http://localhost:8080/api/logout", { method: "POST" }).catch(() => {});
     } finally {
@@ -858,7 +899,7 @@ const ProfilePage: React.FC<{ username: string; onLogout: () => void }> = ({ use
               </div>
             </div>
 
-            <button onClick={handleLogoutClick} className="logout-btn logout-btn--profile">
+            <button onClick={() => setShowLogoutConfirm(true)} className="logout-btn logout-btn--profile">
               Log Out
             </button>
           </div>
@@ -918,6 +959,20 @@ const ProfilePage: React.FC<{ username: string; onLogout: () => void }> = ({ use
           </div>
         </section>
 
+        {showLogoutConfirm && (
+            <div className="modal" role="dialog" aria-modal="true" aria-labelledby="logout-title">
+              <div className="modal-content confirm-modal">
+                <h3 id="logout-title">Log out?</h3>
+                <p className="confirm-text">You’ll be returned to the login screen.</p>
+
+                <div className="modal-buttons">
+                  <button onClick={confirmLogout} className="danger">Yes, log out</button>
+                  <button onClick={() => setShowLogoutConfirm(false)} className="secondary">Cancel</button>
+                </div>
+              </div>
+            </div>
+        )}
+
       </div>
   );
 };
@@ -928,6 +983,14 @@ function App() {
   const [currentPage, setCurrentPage] = useState<'auth' | 'game' | 'results' | 'profile'>('auth');
   const [username, setUsername] = useState<string>('');
   const [userId, setUserId] = useState<number | null>(null);
+
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ type, message });
+    // auto-hide after 3s
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const handleLogin = (user: string, id: number) => {
     setUsername(user);
@@ -969,8 +1032,14 @@ function App() {
             </nav>
         )}
 
+        {toast && (
+            <div className={`toast ${toast.type === 'success' ? 'toast-success' : 'toast-error'}`} role="status" aria-live="polite">
+              {toast.message}
+            </div>
+        )}
+
         <main className="main-content">
-          {currentPage === 'auth' && <AuthPage onLogin={handleLogin}/>}
+          {currentPage === 'auth' && <AuthPage onLogin={handleLogin} onNotify={showToast} />}
           {currentPage === 'game' && <GamePage username={username}/>}
           {currentPage === 'results' && <ResultsPage/>}
           {currentPage === 'profile' && <ProfilePage username={username} onLogout={handleLogout}/>}
