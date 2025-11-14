@@ -29,6 +29,28 @@ public class GameStateController {
         GameStateResponse response = gameStateService.getGameStateResponse(gameState.getGameId());
         return ResponseEntity.ok(response);
     }
+    /**
+     * Complete the turn with player's decision (Step 2 of turn)
+     * POST /api/game/{gameId}/complete-turn
+     * Body: { "drawnCard": {...}, "swap": true, "cardIndexToSwap": 2 }
+     */
+    @PostMapping("/{gameId}/complete-turn")
+    public ResponseEntity<GameStateResponse> completeTurn(
+            @PathVariable Long gameId,
+            @RequestBody CompleteTurnRequest request) {
+
+        System.out.println("Controller received - swap: " + request.isSwap() + ", cardIndexToSwap: " + request.getCardIndexToSwap());
+        System.out.println("DrawnCard id: " + (request.getDrawnCard() != null ? request.getDrawnCard().getId() : "null"));
+
+        GameStateResponse response = gameStateService.completeTurn(
+                gameId,
+                request.getDrawnCard(),
+                request.isSwap(),
+                request.getCardIndexToSwap(),
+                request.getDrawFrom()
+        );
+        return ResponseEntity.ok(response);
+    }
 
     /**
      * Draw a card (Step 1 of turn)
