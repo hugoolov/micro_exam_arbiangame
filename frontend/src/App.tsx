@@ -316,12 +316,28 @@ const AuthPage: React.FC<{ onLogin: (username: string, userId: number) => void; 
   );
 };
 
+// ==================== SAVED GAME INTERFACES ====================
+interface SavedGame {
+  id: number;
+  playerName: string;
+  saveName: string;
+  savedAt: string;
+  roundNumber: number;
+  playerScore: number;
+  computerScore: number;
+  gameStateId: number;
+}
+
 // ==================== GAME COMPONENT ====================
 const GamePage: React.FC<{ username: string }> = ({ username }) => {
   const [gameState, setGameState] = useState<any>(null);
   const [drawnCard, setDrawnCard] = useState<any>(null);
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
   const [drawFrom, setDrawFrom] = useState<string | null>(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveName, setSaveName] = useState('');
+  const [showLoadModal, setShowLoadModal] = useState(false);
+  const [savedGames, setSavedGames] = useState<SavedGame[]>([]);
 
   const startGame = async () => {
     const response = await fetch('http://localhost:8080/api/game/start', {
@@ -400,6 +416,79 @@ const GamePage: React.FC<{ username: string }> = ({ username }) => {
     alert('Result saved!');
   };
 
+  const saveGame = async () => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/game/${gameState.gameId}/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerName: username,
+          saveName: saveName || 'Saved Game'
+        })
+      });
+
+      if (response.ok) {
+        alert('Game saved successfully!');
+        setShowSaveModal(false);
+        setSaveName('');
+      } else {
+        alert('Failed to save game');
+      }
+    } catch (error) {
+      console.error('Error saving game:', error);
+      alert('Error saving game');
+    }
+  };
+
+  const loadSavedGames = async () => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/game/saved?playerName=${username}`);
+      const data = await response.json();
+      setSavedGames(data);
+      setShowLoadModal(true);
+    } catch (error) {
+      console.error('Error loading saved games:', error);
+      alert('Error loading saved games');
+    }
+  };
+
+  const loadGame = async (savedGameId: number) => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/game/load/${savedGameId}`, {
+        method: 'POST'
+      });
+      const data = await response.json();
+      setGameState(data);
+      setDrawnCard(null);
+      setSelectedCardIndex(null);
+      setShowLoadModal(false);
+      alert('Game loaded successfully!');
+    } catch (error) {
+      console.error('Error loading game:', error);
+      alert('Error loading game');
+    }
+  };
+
+  const deleteSavedGame = async (savedGameId: number) => {
+    if (!confirm('Are you sure you want to delete this saved game?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/game/saved/${savedGameId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        setSavedGames(savedGames.filter(g => g.id !== savedGameId));
+        alert('Saved game deleted');
+      }
+    } catch (error) {
+      console.error('Error deleting saved game:', error);
+      alert('Error deleting saved game');
+    }
+  };
+
   return (
     <div className="game-page">
       <h1>Card Game</h1>
@@ -423,9 +512,14 @@ const GamePage: React.FC<{ username: string }> = ({ username }) => {
               <p className="hint">Tip: Watch the discard pile to plan smarter swaps.</p>
             </section>
 
-            <button onClick={startGame} className="start-game-btn start-game-btn--landing">
-              Start New Game
-            </button>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              <button onClick={startGame} className="start-game-btn start-game-btn--landing">
+                Start New Game
+              </button>
+              <button onClick={loadSavedGames} className="start-game-btn start-game-btn--landing">
+                Load Saved Game
+              </button>
+            </div>
           </div>
       )}
 
@@ -442,7 +536,10 @@ const GamePage: React.FC<{ username: string }> = ({ username }) => {
               Draw from Open Table
             </button>
             {!gameState.gameOver && (
-              <button onClick={endGame} className="secondary">End Game Early</button>
+              <>
+                <button onClick={endGame} className="secondary">End Game Early</button>
+                <button onClick={() => setShowSaveModal(true)} className="secondary">Save Game</button>
+              </>
             )}
           </div>
 
@@ -519,6 +616,85 @@ const GamePage: React.FC<{ username: string }> = ({ username }) => {
             <p><strong>Round:</strong> {gameState.roundNumber}</p>
             <p><strong>Scores:</strong> You: {gameState.playerScore} | Computer: {gameState.computerScore}</p>
             {gameState.message && <p className="game-message">{gameState.message}</p>}
+          </div>
+        </div>
+      )}
+
+      {/* Save Game Modal */}
+      {showSaveModal && (
+        <div className="modal-overlay" onClick={() => setShowSaveModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>Save Game</h2>
+            <p>Enter a name for this saved game:</p>
+            <input
+              type="text"
+              placeholder="Game name (optional)"
+              value={saveName}
+              onChange={(e) => setSaveName(e.target.value)}
+              autoFocus
+            />
+            <div className="modal-buttons">
+              <button onClick={saveGame}>Save</button>
+              <button onClick={() => setShowSaveModal(false)} className="secondary">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Load Game Modal */}
+      {showLoadModal && (
+        <div className="modal-overlay" onClick={() => setShowLoadModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <h2>Load Saved Game</h2>
+            {savedGames.length === 0 ? (
+              <p>No saved games found.</p>
+            ) : (
+              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid #ccc' }}>
+                      <th style={{ padding: '8px', textAlign: 'left' }}>Name</th>
+                      <th style={{ padding: '8px', textAlign: 'center' }}>Round</th>
+                      <th style={{ padding: '8px', textAlign: 'center' }}>Score</th>
+                      <th style={{ padding: '8px', textAlign: 'center' }}>Saved</th>
+                      <th style={{ padding: '8px', textAlign: 'center' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {savedGames.map((game) => (
+                      <tr key={game.id} style={{ borderBottom: '1px solid #eee' }}>
+                        <td style={{ padding: '8px' }}>{game.saveName}</td>
+                        <td style={{ padding: '8px', textAlign: 'center' }}>{game.roundNumber}</td>
+                        <td style={{ padding: '8px', textAlign: 'center' }}>
+                          {game.playerScore} - {game.computerScore}
+                        </td>
+                        <td style={{ padding: '8px', textAlign: 'center' }}>
+                          {new Date(game.savedAt).toLocaleDateString()}
+                        </td>
+                        <td style={{ padding: '8px', textAlign: 'center' }}>
+                          <button
+                            onClick={() => loadGame(game.id)}
+                            style={{ marginRight: '5px', padding: '4px 8px' }}
+                          >
+                            Load
+                          </button>
+                          <button
+                            onClick={() => deleteSavedGame(game.id)}
+                            className="secondary"
+                            style={{ padding: '4px 8px' }}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="modal-buttons" style={{ marginTop: '20px' }}>
+              <button onClick={() => setShowLoadModal(false)} className="secondary">Close</button>
+            </div>
           </div>
         </div>
       )}

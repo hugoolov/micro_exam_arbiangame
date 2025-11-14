@@ -8,6 +8,7 @@ import com.example.game_logic.decks.DeckService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -17,12 +18,14 @@ public class GameStateService {
     private final DeckService deckService;
     private final GameStateRepo gameStateRepo;
     private final RabbitTemplate rabbitTemplate;
+    private final SavedGameRepository savedGameRepository;
 
-    public GameStateService(CardService cardService, DeckService deckService, GameStateRepo gameStateRepo, RabbitTemplate rabbitTemplate) {
+    public GameStateService(CardService cardService, DeckService deckService, GameStateRepo gameStateRepo, RabbitTemplate rabbitTemplate, SavedGameRepository savedGameRepository) {
         this.cardService = cardService;
         this.deckService = deckService;
         this.gameStateRepo = gameStateRepo;
         this.rabbitTemplate = rabbitTemplate;
+        this.savedGameRepository = savedGameRepository;
     }
 
     /**
@@ -392,5 +395,106 @@ public class GameStateService {
                 gameState.getComputerScore(),
                 gameState.getRoundNumber()
         );
+    }
+
+    /**
+     * Clone a deck with all its card IDs
+     */
+    private Deck cloneDeck(Deck originalDeck) {
+        Deck clonedDeck = new Deck();
+        clonedDeck.setDeckName(originalDeck.getDeckName());
+        clonedDeck.setCardIds(new ArrayList<>(originalDeck.getCardIds()));
+        return deckService.createDeck(clonedDeck.getDeckName(), clonedDeck.getCardIds());
+    }
+
+    /**
+     * Clone a complete game state for saving
+     */
+    private GameState cloneGameState(GameState original) {
+        // Clone all decks
+        Deck clonedMainDeck = cloneDeck(deckService.getDeck(original.getMainDeck().getDeckId()));
+        Deck clonedOpenTableDeck = cloneDeck(deckService.getDeck(original.getOpenTableDeck().getDeckId()));
+        Deck clonedPlayerHand = cloneDeck(deckService.getDeck(original.getPlayerHand().getDeckId()));
+        Deck clonedComputerHand = cloneDeck(deckService.getDeck(original.getComputerHand().getDeckId()));
+
+        // Create new game state with cloned decks
+        GameState clonedState = new GameState();
+        clonedState.setMainDeck(clonedMainDeck);
+        clonedState.setOpenTableDeck(clonedOpenTableDeck);
+        clonedState.setPlayerHand(clonedPlayerHand);
+        clonedState.setComputerHand(clonedComputerHand);
+        clonedState.setPlayerScore(original.getPlayerScore());
+        clonedState.setComputerScore(original.getComputerScore());
+        clonedState.setRoundNumber(original.getRoundNumber());
+        clonedState.setGameOver(original.isGameOver());
+
+        return gameStateRepo.save(clonedState);
+    }
+
+    /**
+     * Save current game state for later
+     */
+    @Transactional
+    public SavedGame saveGame(Long gameId, String playerName, String saveName) {
+        GameState originalGame = gameStateRepo.findById(gameId)
+                .orElseThrow(() -> new RuntimeException("Game not found with id: " + gameId));
+
+        if (originalGame.isGameOver()) {
+            throw new RuntimeException("Cannot save a game that is already over!");
+        }
+
+        // Clone the game state
+        GameState clonedGameState = cloneGameState(originalGame);
+
+        // Create saved game entry
+        SavedGame savedGame = new SavedGame();
+        savedGame.setPlayerName(playerName);
+        savedGame.setSaveName(saveName != null && !saveName.trim().isEmpty() ? saveName : "Saved Game");
+        savedGame.setSavedAt(LocalDateTime.now());
+        savedGame.setGameState(clonedGameState);
+
+        return savedGameRepository.save(savedGame);
+    }
+
+    /**
+     * Load a saved game and return it as an active game
+     */
+    @Transactional
+    public GameState loadSavedGame(Long savedGameId) {
+        SavedGame savedGame = savedGameRepository.findById(savedGameId)
+                .orElseThrow(() -> new RuntimeException("Saved game not found with id: " + savedGameId));
+
+        // Clone the saved game state to create a new active game
+        GameState activeGame = cloneGameState(savedGame.getGameState());
+
+        return activeGame;
+    }
+
+    /**
+     * Get all saved games for a specific player
+     */
+    public List<SavedGame> getSavedGames(String playerName) {
+        if (playerName != null && !playerName.trim().isEmpty()) {
+            return savedGameRepository.findByPlayerNameOrderBySavedAtDesc(playerName);
+        }
+        return savedGameRepository.findAllByOrderBySavedAtDesc();
+    }
+
+    /**
+     * Delete a saved game
+     */
+    @Transactional
+    public void deleteSavedGame(Long savedGameId) {
+        SavedGame savedGame = savedGameRepository.findById(savedGameId)
+                .orElseThrow(() -> new RuntimeException("Saved game not found with id: " + savedGameId));
+
+        // Delete the associated game state and decks
+        GameState gameState = savedGame.getGameState();
+        if (gameState != null) {
+            savedGameRepository.delete(savedGame);
+            gameStateRepo.delete(gameState);
+        } else {
+            savedGameRepository.delete(savedGame);
+        }
     }
 }
