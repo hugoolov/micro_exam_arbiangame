@@ -153,10 +153,6 @@ public class GameStateService {
 
         return computerMessage;
     }
-
-    /**
-     * Check if game should end and update game state accordingly
-     */
     /**
      * Calculate and save final scores when game ends
      */
@@ -333,11 +329,6 @@ public class GameStateService {
         Deck computerHand = deckService.getDeck(gameState.getComputerHand().getDeckId());
         Deck mainDeck = deckService.getDeck(gameState.getMainDeck().getDeckId());
         Deck openTableDeck = deckService.getDeck(gameState.getOpenTableDeck().getDeckId());
-
-        /* DEBUG
-        System.out.println("Player hand cardIds: " + playerHand.getCardIds().size());
-        System.out.println("Player hand cards: " + playerHand.getCards().size());
-*/
 
         // Calculate current scores
         int playerScore = cardService.calculateHandScore(playerHand.getCards());

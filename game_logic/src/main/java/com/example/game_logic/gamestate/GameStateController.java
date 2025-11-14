@@ -1,4 +1,3 @@
-// GameStateController.java
 package com.example.game_logic.gamestate;
 
 import com.example.game_logic.card.Card;
@@ -42,29 +41,6 @@ public class GameStateController {
 
         Card drawnCard = gameStateService.drawCard(gameId, from);
         return ResponseEntity.ok(drawnCard);
-    }
-
-    /**
-     * Complete the turn with player's decision (Step 2 of turn)
-     * POST /api/game/{gameId}/complete-turn
-     * Body: { "drawnCard": {...}, "swap": true, "cardIndexToSwap": 2 }
-     */
-    @PostMapping("/{gameId}/complete-turn")
-    public ResponseEntity<GameStateResponse> completeTurn(
-            @PathVariable Long gameId,
-            @RequestBody CompleteTurnRequest request) {
-
-        System.out.println("Controller received - swap: " + request.isSwap() + ", cardIndexToSwap: " + request.getCardIndexToSwap());
-        System.out.println("DrawnCard id: " + (request.getDrawnCard() != null ? request.getDrawnCard().getId() : "null"));
-
-        GameStateResponse response = gameStateService.completeTurn(
-                gameId,
-                request.getDrawnCard(),
-                request.isSwap(),
-                request.getCardIndexToSwap(),
-                request.getDrawFrom()
-        );
-        return ResponseEntity.ok(response);
     }
 
     /**
