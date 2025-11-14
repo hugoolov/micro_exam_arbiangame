@@ -655,7 +655,6 @@ const GamePage: React.FC<{ username: string }> = ({ username }) => {
                     <tr style={{ borderBottom: '2px solid #ccc' }}>
                       <th style={{ padding: '8px', textAlign: 'left' }}>Name</th>
                       <th style={{ padding: '8px', textAlign: 'center' }}>Round</th>
-                      <th style={{ padding: '8px', textAlign: 'center' }}>Score</th>
                       <th style={{ padding: '8px', textAlign: 'center' }}>Saved</th>
                       <th style={{ padding: '8px', textAlign: 'center' }}>Actions</th>
                     </tr>
@@ -665,9 +664,6 @@ const GamePage: React.FC<{ username: string }> = ({ username }) => {
                       <tr key={game.id} style={{ borderBottom: '1px solid #eee' }}>
                         <td style={{ padding: '8px' }}>{game.saveName}</td>
                         <td style={{ padding: '8px', textAlign: 'center' }}>{game.roundNumber}</td>
-                        <td style={{ padding: '8px', textAlign: 'center' }}>
-                          {game.playerScore} - {game.computerScore}
-                        </td>
                         <td style={{ padding: '8px', textAlign: 'center' }}>
                           {new Date(game.savedAt).toLocaleDateString()}
                         </td>
