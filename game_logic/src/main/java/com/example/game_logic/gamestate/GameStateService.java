@@ -5,6 +5,8 @@ import com.example.game_logic.card.CardService;
 import com.example.game_logic.config.RabbitMQConfig;
 import com.example.game_logic.decks.Deck;
 import com.example.game_logic.decks.DeckService;
+import com.example.game_logic.savegame.SavedGame;
+import com.example.game_logic.savegame.SavedGameRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;

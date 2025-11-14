@@ -2,6 +2,8 @@
 package com.example.game_logic.gamestate;
 
 import com.example.game_logic.card.Card;
+import com.example.game_logic.savegame.SavedGame;
+import com.example.game_logic.savegame.SavedGameResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;

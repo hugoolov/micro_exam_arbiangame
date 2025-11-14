@@ -1,4 +1,4 @@
-package com.example.game_logic.gamestate;
+package com.example.game_logic.savegame;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

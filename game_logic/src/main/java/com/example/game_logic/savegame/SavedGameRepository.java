@@ -1,4 +1,4 @@
-package com.example.game_logic.gamestate;
+package com.example.game_logic.savegame;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

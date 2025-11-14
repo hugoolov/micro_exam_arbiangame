@@ -1,5 +1,6 @@
-package com.example.game_logic.gamestate;
+package com.example.game_logic.savegame;
 
+import com.example.game_logic.gamestate.GameState;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
