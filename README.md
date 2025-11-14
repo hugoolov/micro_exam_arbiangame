@@ -9,8 +9,6 @@ This project implements an Arabian card game (similar to Golf card game) using a
 - **User Authentication**: Secure registration and login
 - **Game Results Tracking**: Persistent storage of game outcomes
 - **Weather Integration**: Real-time weather data with "go outside" recommendations
-- **Microservices Architecture**: Scalable, distributed system design
-
 ---
 
 ## System Architecture
@@ -134,6 +132,9 @@ docker-compose up --build
 
 # Or run in detached mode (background):
 docker-compose up --build -d
+
+# Run with multiple game-logic instances
+docker compose up -d --scale game-logic=3 #game-logic="number of instances"
 ```
 
 #### Step 3: Verify services are running
@@ -314,23 +315,6 @@ For testing authentication:
    - Calm purple gradient
    - Message: "Perfect weather for gaming! 🌧️🎮"
 
-**Test with different locations**:
-```bash
-# Oslo (usually nice weather)
-curl "http://localhost:8080/api/weather?lat=59.9333&lon=10.7166"
-
-# Bergen (often rainy)
-curl "http://localhost:8080/api/weather?lat=60.3894&lon=5.33"
-
-# Tromsø (northern Norway)
-curl "http://localhost:8080/api/weather?lat=69.6827&lon=18.9427"
-```
-
-**Expected Result**:
-- Weather data fetched from MET Norway API
-- Weather analysis performed
-- Recommendation given based on conditions
-
 ---
 
 #### 5. Service Discovery and Health Monitoring
@@ -383,58 +367,6 @@ curl http://localhost:8084/actuator/health
 4. Requests should be distributed across both instances
 
 **Expected Result**: Load balancer distributes requests across multiple instances
-
----
-
-### API Testing with curl
-
-#### Authentication
-```bash
-# Check username availability
-curl "http://localhost:8080/api/auth/check-username?username=testuser"
-
-# Register new user
-curl -X POST http://localhost:8080/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"newuser","password":"password123"}'
-
-# Login
-curl -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"newuser","password":"password123"}'
-```
-
-#### Game Logic
-```bash
-# Start new game
-curl -X POST http://localhost:8080/api/game/start
-
-# Get game state (replace {gameId} with actual ID from start response)
-curl http://localhost:8080/api/game/{gameId}
-
-# Draw a card
-curl -X POST "http://localhost:8080/api/game/{gameId}/draw?from=mainDeck"
-```
-
-#### Game Results
-```bash
-# Get all results
-curl http://localhost:8080/api/results
-
-# Save result manually (alternative to queue)
-curl -X POST http://localhost:8080/api/results \
-  -H "Content-Type: application/json" \
-  -d '{"playerName":"TestPlayer","playerScore":15,"computerScore":20,"rounds":10}'
-```
-
-#### Weather
-```bash
-# Get weather for Oslo
-curl "http://localhost:8080/api/weather?lat=59.9333&lon=10.7166"
-
-# Get weather for Bergen
-curl "http://localhost:8080/api/weather?lat=60.3894&lon=5.33"
-```
 
 ---
 
@@ -641,47 +573,8 @@ docker-compose logs postgres-auth
 
 ---
 
-## Future Improvements
-
-1. **Security Enhancements**
-   - Implement JWT token-based authentication
-   - Add OAuth2 support
-   - Service-to-service authentication
-
-2. **Monitoring & Observability**
-   - Add distributed tracing (Zipkin/Jaeger)
-   - Implement centralized logging (ELK Stack)
-   - Add metrics collection (Prometheus/Grafana)
-
-3. **Resilience**
-   - Circuit breakers (Resilience4j)
-   - Retry logic with exponential backoff
-   - Bulkhead patterns
-
-4. **Features**
-   - Multiplayer support
-   - Leaderboard with rankings
-   - Game replay functionality
-   - More AI difficulty levels
-
----
-
-## License
-
-This project is for educational purposes as part of the PG3402 Microservices course.
-
----
-
-## Contact
-
-[Your Name]
-[Your Email]
-[Your Student ID]
-
----
 
 ## Acknowledgments
 
 - MET Norway for weather API
-- Spring Cloud community for excellent documentation
 - Course instructors for guidance and feedback
